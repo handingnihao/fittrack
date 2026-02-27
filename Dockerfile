@@ -16,12 +16,14 @@ RUN npm run build
 
 # ─── Stage 3: runner ─────────────────────────────────────────────────────────
 FROM node:20-alpine AS runner
-RUN apk add --no-cache python3 make g++
+# su-exec: lightweight setuid helper (like gosu) for dropping privileges
+RUN apk add --no-cache python3 make g++ su-exec
 WORKDIR /app
 
 ENV NODE_ENV=production
 ENV NEXT_TELEMETRY_DISABLED=1
 ENV PORT=3000
+ENV HOSTNAME=0.0.0.0
 
 # Create non-root user
 RUN addgroup --system --gid 1001 nodejs && \
@@ -40,11 +42,14 @@ COPY --from=builder /app/node_modules/file-uri-to-path ./node_modules/file-uri-t
 # Data directory for SQLite — mounted as a volume
 RUN mkdir -p /data && chown nextjs:nodejs /data
 
-USER nextjs
+# Entrypoint: fixes bind-mount permissions, then drops to nextjs user
+COPY docker-entrypoint.sh /usr/local/bin/docker-entrypoint.sh
+RUN chmod +x /usr/local/bin/docker-entrypoint.sh
 
 EXPOSE 3000
 
 # DATABASE_URL points to the persistent data volume
 ENV DATABASE_URL=/data/fittrack.db
 
+ENTRYPOINT ["/usr/local/bin/docker-entrypoint.sh"]
 CMD ["node", "server.js"]
