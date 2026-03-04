@@ -11,6 +11,7 @@ import { useActiveWorkout } from "@/hooks/useActiveWorkout"
 import type { ActiveExercise, ExerciseHistoryPoint } from "@/types"
 import type { Exercise } from "@/db/schema"
 import { formatDuration } from "@/lib/utils"
+import { format } from "date-fns"
 
 type DraftSet = { weightKg: number | null; reps: number | null; isWarmup: boolean; isDropSet: boolean } | null
 
@@ -151,7 +152,7 @@ export default function ActiveWorkoutPage({ params }: { params: { id: string } }
         const sessionRes = await fetch("/api/workouts", {
           method: "POST",
           headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({ routineId: routine.id, name: routine.name }),
+          body: JSON.stringify({ routineId: routine.id, name: routine.name, dateStr: format(new Date(), "yyyy-MM-dd") }),
         })
         const session = await sessionRes.json()
 

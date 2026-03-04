@@ -300,37 +300,91 @@ export default function SessionDetailPage({ params }: { params: { sessionId: str
         </Card>
       )}
 
-      {/* Exercise list */}
-      <div className="space-y-3">
-        {session.exercises?.map((ex, idx) => (
-          <Card key={idx}>
+      {/* Session summary */}
+      {session.exercises && session.exercises.length > 0 && (() => {
+        const totalSets = session.exercises.reduce((n, ex) => n + (ex.sets?.length ?? 0), 0)
+        const totalVolLbs = session.exercises.reduce(
+          (n, ex) =>
+            n +
+            (ex.sets ?? []).reduce(
+              (s, set) =>
+                s + (set.weightKg != null && set.reps != null ? kgToLbs(set.weightKg) * set.reps : 0),
+              0
+            ),
+          0
+        )
+        return (
+          <Card className="border-border/60 bg-secondary/20">
             <CardContent className="p-4">
-              <p className="font-semibold text-sm mb-3">{ex.exerciseName}</p>
-              <div className="space-y-1.5">
-                {ex.sets?.map((set, setIdx) => (
-                  <div key={setIdx} className="flex items-center gap-3 text-sm">
-                    <span className={`w-6 text-center text-xs font-bold ${set.isWarmup ? "text-yellow-500" : "text-muted-foreground"}`}>
-                      {set.isWarmup ? "W" : setIdx + 1}
-                    </span>
-                    <span className="flex-1">
-                      {set.weightKg != null ? `${kgToLbs(set.weightKg)} lbs` : "BW"}
-                      {" × "}
-                      {set.reps != null ? `${set.reps} reps` : "—"}
-                    </span>
-                    {set.weightKg != null && set.reps != null && (
-                      <span className="text-xs text-muted-foreground">
-                        {round1(kgToLbs(set.weightKg) * set.reps)} vol
-                      </span>
-                    )}
-                    {set.isPersonalBest && (
-                      <span className="text-xs text-neon-yellow font-bold">🏆 PB</span>
-                    )}
-                  </div>
-                ))}
+              <div className="flex gap-6 text-sm">
+                <div>
+                  <p className="text-xs text-muted-foreground">Exercises</p>
+                  <p className="font-bold">{session.exercises.length}</p>
+                </div>
+                <div>
+                  <p className="text-xs text-muted-foreground">Sets</p>
+                  <p className="font-bold">{totalSets}</p>
+                </div>
+                <div>
+                  <p className="text-xs text-muted-foreground">Total Volume</p>
+                  <p className="font-bold">{Math.round(totalVolLbs).toLocaleString()} lbs</p>
+                </div>
               </div>
             </CardContent>
           </Card>
-        ))}
+        )
+      })()}
+
+      {/* Exercise list */}
+      <div className="space-y-3">
+        {session.exercises?.map((ex, idx) => {
+          const workingSets = (ex.sets ?? []).filter((s) => !s.isWarmup)
+          const maxLbs = workingSets.reduce(
+            (m, s) => Math.max(m, s.weightKg != null ? kgToLbs(s.weightKg) : 0),
+            0
+          )
+          const totalVolLbs = workingSets.reduce(
+            (n, s) => n + (s.weightKg != null && s.reps != null ? kgToLbs(s.weightKg) * s.reps : 0),
+            0
+          )
+          return (
+            <Card key={idx}>
+              <CardContent className="p-4">
+                <p className="font-semibold text-sm">{ex.exerciseName}</p>
+                {workingSets.length > 0 && (
+                  <p className="text-xs text-muted-foreground mt-0.5 mb-3">
+                    {workingSets.length} set{workingSets.length !== 1 ? "s" : ""}
+                    {maxLbs > 0 && ` · Max ${round1(maxLbs)} lbs`}
+                    {totalVolLbs > 0 && ` · Vol ${Math.round(totalVolLbs).toLocaleString()} lbs`}
+                  </p>
+                )}
+                {!workingSets.length && <div className="mb-3" />}
+                <div className="space-y-1.5">
+                  {ex.sets?.map((set, setIdx) => (
+                    <div key={setIdx} className="flex items-center gap-3 text-sm">
+                      <span className={`w-6 text-center text-xs font-bold ${set.isWarmup ? "text-yellow-500" : "text-muted-foreground"}`}>
+                        {set.isWarmup ? "W" : setIdx + 1}
+                      </span>
+                      <span className="flex-1">
+                        {set.weightKg != null ? `${round1(kgToLbs(set.weightKg))} lbs` : "BW"}
+                        {" × "}
+                        {set.reps != null ? `${set.reps} reps` : "—"}
+                      </span>
+                      {set.weightKg != null && set.reps != null && (
+                        <span className="text-xs text-muted-foreground">
+                          {round1(kgToLbs(set.weightKg) * set.reps)} vol
+                        </span>
+                      )}
+                      {set.isPersonalBest && (
+                        <span className="text-xs text-neon-yellow font-bold">🏆 PB</span>
+                      )}
+                    </div>
+                  ))}
+                </div>
+              </CardContent>
+            </Card>
+          )
+        })}
       </div>
     </div>
   )

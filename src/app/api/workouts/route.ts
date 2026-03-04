@@ -5,6 +5,7 @@ import { desc, eq } from "drizzle-orm"
 import { CreateSessionSchema } from "@/lib/validators"
 import { format } from "date-fns"
 import { seedExercises } from "@/db/seed"
+import { getActiveProfileId } from "@/lib/profile"
 
 // Ensure exercise library is seeded on first access
 let seeded = false
@@ -17,12 +18,14 @@ async function ensureSeeded() {
 
 export async function GET(req: NextRequest) {
   await ensureSeeded()
+  const profileId = getActiveProfileId(req)
   const { searchParams } = new URL(req.url)
   const limit = Math.min(parseInt(searchParams.get("limit") ?? "20"), 100)
 
   const sessions = await db
     .select()
     .from(workoutSessions)
+    .where(eq(workoutSessions.profileId, profileId))
     .orderBy(desc(workoutSessions.startedAt))
     .limit(limit)
 
@@ -31,17 +34,19 @@ export async function GET(req: NextRequest) {
 
 export async function POST(req: NextRequest) {
   await ensureSeeded()
+  const profileId = getActiveProfileId(req)
   const body = await req.json()
   const parsed = CreateSessionSchema.safeParse(body)
   if (!parsed.success) return NextResponse.json({ error: parsed.error.flatten() }, { status: 400 })
 
   const now = new Date()
-  const dateStr = format(now, "yyyy-MM-dd")
+  const dateStr = parsed.data.dateStr ?? format(now, "yyyy-MM-dd")
 
   const [session] = await db
     .insert(workoutSessions)
     .values({
       ...parsed.data,
+      profileId,
       startedAt: now,
       dateStr,
     })

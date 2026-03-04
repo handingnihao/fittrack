@@ -13,6 +13,9 @@ services:
     environment:
       DATABASE_URL: /data/fittrack.db
       NODE_ENV: production
+      # Set to your local timezone so server-side dates (dashboard, streaks) match local time
+      # Find your timezone at: https://en.wikipedia.org/wiki/List_of_tz_database_time_zones
+      TZ: America/Chicago
     healthcheck:
       test: ["CMD", "wget", "-qO-", "http://127.0.0.1:3000/api/profile"]
       interval: 30s

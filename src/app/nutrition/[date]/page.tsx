@@ -25,8 +25,8 @@ export default function NutritionDatePage({ params }: { params: { date: string }
   useEffect(() => {
     setLoading(true)
     Promise.all([
-      fetch(`/api/stats/daily-summary?date=${dateStr}`).then((r) => r.json()),
-      fetch(`/api/nutrition?date=${dateStr}`).then((r) => r.json()),
+      fetch(`/api/stats/daily-summary?date=${dateStr}`).then((r) => r.json()).catch(() => null),
+      fetch(`/api/nutrition?date=${dateStr}`).then((r) => r.json()).catch(() => []),
     ]).then(([sum, ents]) => {
       setSummary(sum)
       setEntries(ents)

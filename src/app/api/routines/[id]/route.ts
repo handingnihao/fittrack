@@ -1,12 +1,14 @@
 import { NextRequest, NextResponse } from "next/server"
 import { db } from "@/db"
 import { routines, routineExercises, exercises } from "@/db/schema"
-import { eq, asc } from "drizzle-orm"
+import { eq, and, asc } from "drizzle-orm"
 import { UpdateRoutineSchema } from "@/lib/validators"
+import { getActiveProfileId } from "@/lib/profile"
 
-export async function GET(_: NextRequest, { params }: { params: { id: string } }) {
+export async function GET(req: NextRequest, { params }: { params: { id: string } }) {
   const id = parseInt(params.id)
-  const [routine] = await db.select().from(routines).where(eq(routines.id, id))
+  const profileId = getActiveProfileId(req)
+  const [routine] = await db.select().from(routines).where(and(eq(routines.id, id), eq(routines.profileId, profileId)))
   if (!routine) return NextResponse.json({ error: "Not found" }, { status: 404 })
 
   const exs = await db
@@ -33,6 +35,7 @@ export async function GET(_: NextRequest, { params }: { params: { id: string } }
 
 export async function PATCH(req: NextRequest, { params }: { params: { id: string } }) {
   const id = parseInt(params.id)
+  const profileId = getActiveProfileId(req)
   const body = await req.json()
   const parsed = UpdateRoutineSchema.safeParse(body)
   if (!parsed.success) return NextResponse.json({ error: parsed.error.flatten() }, { status: 400 })
@@ -40,14 +43,15 @@ export async function PATCH(req: NextRequest, { params }: { params: { id: string
   const [updated] = await db
     .update(routines)
     .set({ ...parsed.data, updatedAt: new Date() })
-    .where(eq(routines.id, id))
+    .where(and(eq(routines.id, id), eq(routines.profileId, profileId)))
     .returning()
   if (!updated) return NextResponse.json({ error: "Not found" }, { status: 404 })
   return NextResponse.json(updated)
 }
 
-export async function DELETE(_: NextRequest, { params }: { params: { id: string } }) {
+export async function DELETE(req: NextRequest, { params }: { params: { id: string } }) {
   const id = parseInt(params.id)
-  await db.delete(routines).where(eq(routines.id, id))
+  const profileId = getActiveProfileId(req)
+  await db.delete(routines).where(and(eq(routines.id, id), eq(routines.profileId, profileId)))
   return NextResponse.json({ ok: true })
 }

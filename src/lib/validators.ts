@@ -54,6 +54,7 @@ export const AddRoutineExerciseSchema = z.object({
 export const CreateSessionSchema = z.object({
   routineId: z.number().int().positive().optional().nullable(),
   name: z.string().min(1).max(200),
+  dateStr: z.string().regex(/^\d{4}-\d{2}-\d{2}$/).optional(),
 });
 
 export const UpdateSessionSchema = z.object({

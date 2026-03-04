@@ -45,14 +45,18 @@ export interface ActiveSet {
   setNumber: number;
   reps: number | null;
   weightKg: number | null;
+  distanceM?: number | null;
+  durationSec?: number | null;
   isWarmup: boolean;
   isDropSet: boolean;
+  isPersonalBest?: boolean;
   completed: boolean;
 }
 
 export interface ActiveExercise {
   exerciseId: number;
   exerciseName: string;
+  exerciseCategory?: string;
   loggedExerciseId?: number;
   restSeconds: number;
   sets: ActiveSet[];

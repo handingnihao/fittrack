@@ -2,7 +2,7 @@ manifestVersion: 1
 id: mcwiseman97-umbrel-app-store-fittrack
 category: fitness
 name: FitTrack
-version: "1.0.6"
+version: "1.1.0"
 tagline: Workout & nutrition tracker for your home server
 description: >-
   FitTrack is a sleek, self-hosted workout and nutrition tracking app.
@@ -11,10 +11,21 @@ description: >-
   data to any third party.
 
   Features:
-  • Workout logging with rest timer, personal-best detection, and progress charts
+  • XP & levelling system — earn XP for every workout, PR, meal logged, and challenge completed
+  • Weekly challenges — 3 auto-generated goals each week with bonus XP rewards
+  • Achievement badges — 30+ unlockable trophies across Workouts, Streaks, PRs, Nutrition, and Volume
+  • Body measurements — log chest, waist, hips, arms and more with trend charts
+  • Progress photos — upload front/side/back shots, view in gallery
+  • Water tracker — quick-add buttons, daily goal progress bar
+  • Muscle-group heatmap — see which muscles you trained this week
+  • Workout schedule planner — assign routines to days of the week
+  • Repeat last workout — one tap to copy any session as a new workout
+  • 1RM estimator — Epley formula shown inline on each set
+  • Cardio mode — distance and duration inputs for cardio exercises with pace display
+  • Daily motivational quote on the dashboard
+  • PWA reminders — optional daily push notification to stay consistent
   • Nutrition diary with custom foods, macro targets, and daily summaries
-  • Consistency heatmap and dashboard overview
-  • Full JSON + CSV data export / import
+  • Full JSON export / import for routines
   • Dark-mode-first UI optimised for phone and desktop
 
 icon: https://raw.githubusercontent.com/mcwiseman97/mcwiseman97-umbrel-app-store/main/mcwiseman97-umbrel-app-store-fittrack/icon.svg

@@ -8,10 +8,11 @@ services:
       PROXY_AUTH_ADD: "false"
 
   web:
-    image: ghcr.io/mcwiseman97/fittrack:1.0.6@sha256:ee7268238b9ae49fa1716f480b8900f86f450b524fb228fd6a01e46393bffd3c
+    image: ghcr.io/mcwiseman97/fittrack:1.1.0@sha256:1222106622c3e67f850b241717dc956d3c12994e64a62ccb3f51568e21da5728
     restart: on-failure
     volumes:
       - ${APP_DATA_DIR}/data:/data
     environment:
       DATABASE_URL: /data/fittrack.db
       NODE_ENV: production
+      TZ: America/Chicago

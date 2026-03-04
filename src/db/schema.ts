@@ -71,6 +71,7 @@ export const exercises = sqliteTable(
 // ─────────────────────────────────────────────
 export const routines = sqliteTable("routines", {
   id: integer("id").primaryKey({ autoIncrement: true }),
+  profileId: integer("profile_id").notNull().default(1),
   name: text("name").notNull(),
   description: text("description"),
   color: text("color").notNull().default("#a78bfa"),
@@ -116,6 +117,7 @@ export const workoutSessions = sqliteTable(
   "workout_sessions",
   {
     id: integer("id").primaryKey({ autoIncrement: true }),
+    profileId: integer("profile_id").notNull().default(1),
     routineId: integer("routine_id").references(() => routines.id, {
       onDelete: "set null",
     }),
@@ -222,6 +224,7 @@ export const foodLog = sqliteTable(
   "food_log",
   {
     id: integer("id").primaryKey({ autoIncrement: true }),
+    profileId: integer("profile_id").notNull().default(1),
     dateStr: text("date_str").notNull(),
     mealType: text("meal_type")
       .notNull()
@@ -244,6 +247,191 @@ export const foodLog = sqliteTable(
   (t) => ({
     dateIdx: index("food_log_date_idx").on(t.dateStr),
     mealIdx: index("food_log_meal_idx").on(t.dateStr, t.mealType),
+  })
+);
+
+// ─────────────────────────────────────────────
+// BODY WEIGHT LOG
+// ─────────────────────────────────────────────
+export const weightLog = sqliteTable(
+  "weight_log",
+  {
+    id: integer("id").primaryKey({ autoIncrement: true }),
+    profileId: integer("profile_id").notNull().default(1),
+    weightKg: real("weight_kg").notNull(),
+    dateStr: text("date_str").notNull(), // YYYY-MM-DD
+    loggedAt: integer("logged_at", { mode: "timestamp" })
+      .notNull()
+      .default(sql`(unixepoch())`),
+  },
+  (t) => ({
+    dateIdx: index("weight_log_date_idx").on(t.dateStr),
+    profileDateUniq: index("weight_log_profile_date_idx").on(t.profileId, t.dateStr),
+  })
+);
+
+// ─────────────────────────────────────────────
+// BODY MEASUREMENTS
+// ─────────────────────────────────────────────
+export const measurements = sqliteTable(
+  "measurements",
+  {
+    id: integer("id").primaryKey({ autoIncrement: true }),
+    profileId: integer("profile_id").notNull().default(1),
+    dateStr: text("date_str").notNull(),
+    chestCm: real("chest_cm"),
+    waistCm: real("waist_cm"),
+    hipsCm: real("hips_cm"),
+    leftArmCm: real("left_arm_cm"),
+    rightArmCm: real("right_arm_cm"),
+    leftThighCm: real("left_thigh_cm"),
+    rightThighCm: real("right_thigh_cm"),
+    neckCm: real("neck_cm"),
+    shouldersCm: real("shoulders_cm"),
+    bodyFatPct: real("body_fat_pct"),
+    notes: text("notes"),
+    createdAt: integer("created_at", { mode: "timestamp" })
+      .notNull()
+      .default(sql`(unixepoch())`),
+  },
+  (t) => ({
+    profileDateIdx: index("measurements_profile_date_idx").on(t.profileId, t.dateStr),
+  })
+);
+
+// ─────────────────────────────────────────────
+// PROFILE STATS (gamification)
+// ─────────────────────────────────────────────
+export const profileStats = sqliteTable("profile_stats", {
+  profileId: integer("profile_id").primaryKey(),
+  totalXp: integer("total_xp").notNull().default(0),
+  level: integer("level").notNull().default(1),
+  streakFreezeTokens: integer("streak_freeze_tokens").notNull().default(0),
+  lastFreezeUsedDate: text("last_freeze_used_date"),
+  lastFreezeEarnedWeek: text("last_freeze_earned_week"),
+  lifetimeWorkouts: integer("lifetime_workouts").notNull().default(0),
+  lifetimePRs: integer("lifetime_prs").notNull().default(0),
+  lifetimeVolumeKg: real("lifetime_volume_kg").notNull().default(0),
+});
+
+// ─────────────────────────────────────────────
+// XP EVENTS
+// ─────────────────────────────────────────────
+export const xpEvents = sqliteTable(
+  "xp_events",
+  {
+    id: integer("id").primaryKey({ autoIncrement: true }),
+    profileId: integer("profile_id").notNull().default(1),
+    eventType: text("event_type")
+      .notNull()
+      .$type<"workout_complete" | "pr_set" | "nutrition_logged" | "challenge_complete" | "streak_milestone" | "measurement_logged">(),
+    xpGained: integer("xp_gained").notNull(),
+    refId: integer("ref_id"),
+    description: text("description"),
+    dateStr: text("date_str").notNull(),
+    createdAt: integer("created_at", { mode: "timestamp" })
+      .notNull()
+      .default(sql`(unixepoch())`),
+  },
+  (t) => ({
+    profileDateIdx: index("xp_events_profile_date_idx").on(t.profileId, t.dateStr),
+  })
+);
+
+// ─────────────────────────────────────────────
+// ACHIEVEMENTS
+// ─────────────────────────────────────────────
+export const achievements = sqliteTable(
+  "achievements",
+  {
+    id: integer("id").primaryKey({ autoIncrement: true }),
+    profileId: integer("profile_id").notNull().default(1),
+    achievementKey: text("achievement_key").notNull(),
+    unlockedAt: integer("unlocked_at", { mode: "timestamp" })
+      .notNull()
+      .default(sql`(unixepoch())`),
+    metadata: text("metadata"),
+  },
+  (t) => ({
+    profileKeyUniq: index("achievements_profile_key_idx").on(t.profileId, t.achievementKey),
+  })
+);
+
+// ─────────────────────────────────────────────
+// WEEKLY CHALLENGES
+// ─────────────────────────────────────────────
+export const challenges = sqliteTable(
+  "challenges",
+  {
+    id: integer("id").primaryKey({ autoIncrement: true }),
+    profileId: integer("profile_id").notNull().default(1),
+    weekStr: text("week_str").notNull(),
+    challengeKey: text("challenge_key").notNull(),
+    title: text("title").notNull(),
+    description: text("description").notNull(),
+    targetValue: integer("target_value").notNull(),
+    currentValue: integer("current_value").notNull().default(0),
+    isCompleted: integer("is_completed", { mode: "boolean" }).notNull().default(false),
+    completedAt: integer("completed_at", { mode: "timestamp" }),
+    xpReward: integer("xp_reward").notNull().default(150),
+    createdAt: integer("created_at", { mode: "timestamp" })
+      .notNull()
+      .default(sql`(unixepoch())`),
+  },
+  (t) => ({
+    profileWeekIdx: index("challenges_profile_week_idx").on(t.profileId, t.weekStr),
+  })
+);
+
+// ─────────────────────────────────────────────
+// WATER LOG
+// ─────────────────────────────────────────────
+export const waterLog = sqliteTable(
+  "water_log",
+  {
+    id: integer("id").primaryKey({ autoIncrement: true }),
+    profileId: integer("profile_id").notNull().default(1),
+    dateStr: text("date_str").notNull(),
+    totalMl: integer("total_ml").notNull().default(0),
+    goalMl: integer("goal_ml").notNull().default(2500),
+    updatedAt: integer("updated_at", { mode: "timestamp" })
+      .notNull()
+      .default(sql`(unixepoch())`),
+  },
+  (t) => ({
+    profileDateUniq: index("water_log_profile_date_idx").on(t.profileId, t.dateStr),
+  })
+);
+
+// ─────────────────────────────────────────────
+// PROGRESS PHOTOS
+// ─────────────────────────────────────────────
+export const progressPhotos = sqliteTable("progress_photos", {
+  id: integer("id").primaryKey({ autoIncrement: true }),
+  profileId: integer("profile_id").notNull().default(1),
+  dateStr: text("date_str").notNull(),
+  filename: text("filename").notNull(),
+  angle: text("angle").$type<"front" | "side" | "back">().notNull().default("front"),
+  notes: text("notes"),
+  createdAt: integer("created_at", { mode: "timestamp" })
+    .notNull()
+    .default(sql`(unixepoch())`),
+});
+
+// ─────────────────────────────────────────────
+// ROUTINE SCHEDULE
+// ─────────────────────────────────────────────
+export const routineSchedule = sqliteTable(
+  "routine_schedule",
+  {
+    id: integer("id").primaryKey({ autoIncrement: true }),
+    routineId: integer("routine_id")
+      .notNull()
+      .references(() => routines.id, { onDelete: "cascade" }),
+    dayOfWeek: integer("day_of_week").notNull(), // 0=Sun..6=Sat
+  },
+  (t) => ({
+    routineDayUniq: index("routine_schedule_routine_day_idx").on(t.routineId, t.dayOfWeek),
   })
 );
 
@@ -334,3 +522,13 @@ export type Food = typeof foods.$inferSelect;
 export type NewFood = typeof foods.$inferInsert;
 export type FoodLogEntry = typeof foodLog.$inferSelect;
 export type NewFoodLogEntry = typeof foodLog.$inferInsert;
+export type WeightEntry = typeof weightLog.$inferSelect;
+export type Measurement = typeof measurements.$inferSelect;
+export type NewMeasurement = typeof measurements.$inferInsert;
+export type ProfileStats = typeof profileStats.$inferSelect;
+export type XpEvent = typeof xpEvents.$inferSelect;
+export type Achievement = typeof achievements.$inferSelect;
+export type Challenge = typeof challenges.$inferSelect;
+export type WaterLogEntry = typeof waterLog.$inferSelect;
+export type ProgressPhoto = typeof progressPhotos.$inferSelect;
+export type RoutineSchedule = typeof routineSchedule.$inferSelect;

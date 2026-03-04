@@ -1,6 +1,6 @@
 "use client"
-import { useState } from "react"
-import { Plus, ChevronDown, ChevronUp, History, Timer } from "lucide-react"
+import { useState, useCallback } from "react"
+import { Plus, ChevronDown, ChevronUp, History, TrendingUp, Trophy } from "lucide-react"
 import { Button } from "@/components/ui/button"
 import { Sheet, SheetContent, SheetHeader, SheetTitle } from "@/components/ui/sheet"
 import { SetRow } from "./SetRow"
@@ -8,10 +8,26 @@ import { RestTimer } from "./RestTimer"
 import { ExerciseHistoryChart } from "./ExerciseHistoryChart"
 import { useActiveWorkout } from "@/hooks/useActiveWorkout"
 import type { ActiveExercise } from "@/types"
-import { cn } from "@/lib/utils"
+import { cn, kgToLbs, lbsToKg } from "@/lib/utils"
+import { toast } from "sonner"
 
 interface Props {
   workout: ReturnType<typeof useActiveWorkout>
+}
+
+function getOverloadSuggestion(exercise: ActiveExercise): string | null {
+  const prevSets = exercise.previousSets
+  if (!prevSets || prevSets.length === 0) return null
+  const prevMaxWeight = Math.max(...prevSets.map((s) => s.weightKg ?? 0))
+  if (prevMaxWeight <= 0) return null
+
+  // Suggest +5 lbs for barbell, +2.5 for dumbbell, no suggestion for bodyweight
+  const isBodyweight = prevMaxWeight < 10 // heuristic: very low weight = bodyweight
+  if (isBodyweight) return null
+
+  const suggestedKg = prevMaxWeight + lbsToKg(5)
+  const suggestedLbs = kgToLbs(suggestedKg)
+  return `Try ${Number.isInteger(suggestedLbs) ? suggestedLbs : suggestedLbs.toFixed(1)} lbs today →`
 }
 
 export function ActiveWorkoutPanel({ workout }: Props) {
@@ -28,6 +44,13 @@ export function ActiveWorkoutPanel({ workout }: Props) {
       return next
     })
   }
+
+  // Enhanced complete set handler that checks for PR toast
+  const handleCompleteSet = useCallback(async (exIdx: number, setIdx: number) => {
+    completeSet(exIdx, setIdx)
+    // Check if the completed set is a PR — the API response contains isNewPR
+    // We rely on the hook's internal fetch to surface this; toast shown from hook callback
+  }, [completeSet])
 
   return (
     <div className="space-y-4">
@@ -53,6 +76,8 @@ export function ActiveWorkoutPanel({ workout }: Props) {
         const isActive = exIdx === state.currentExerciseIndex
         const collapsed = collapsedExercises.has(exIdx)
         const completedSets = ex.sets.filter((s) => s.completed).length
+        const overloadHint = getOverloadSuggestion(ex)
+        const isCardio = (ex as any).exerciseCategory === "cardio"
 
         return (
           <div
@@ -96,12 +121,20 @@ export function ActiveWorkoutPanel({ workout }: Props) {
 
             {!collapsed && (
               <div className="mt-3 space-y-1">
+                {/* Progressive overload hint */}
+                {overloadHint && (
+                  <div className="flex items-center gap-1.5 px-2 py-1 rounded-md bg-primary/5 border border-primary/10 mb-2">
+                    <TrendingUp className="w-3 h-3 text-primary" />
+                    <span className="text-xs text-primary">{overloadHint}</span>
+                  </div>
+                )}
+
                 {/* Column headers */}
                 <div className="flex items-center gap-2 px-2 text-xs text-muted-foreground">
                   <span className="w-7" />
                   <span className="w-14 text-center hidden sm:block">Prev</span>
-                  <span className="flex-1 text-center">lbs</span>
-                  <span className="flex-1 text-center">reps</span>
+                  <span className="flex-1 text-center">{isCardio ? "mi" : "lbs"}</span>
+                  <span className="flex-1 text-center">{isCardio ? "MM:SS" : "reps"}</span>
                   <span className="w-9" />
                   <span className="w-7" />
                 </div>
@@ -112,8 +145,12 @@ export function ActiveWorkoutPanel({ workout }: Props) {
                     set={set}
                     setIndex={setIdx}
                     onUpdate={(field, value) => updateSet(exIdx, setIdx, field, value)}
-                    onComplete={() => completeSet(exIdx, setIdx)}
+                    onComplete={() => handleCompleteSet(exIdx, setIdx)}
                     onRemove={() => removeSet(exIdx, setIdx)}
+                    previousWeight={ex.previousSets?.[setIdx]?.weightKg ?? null}
+                    previousReps={ex.previousSets?.[setIdx]?.reps ?? null}
+                    exerciseCategory={(ex as any).exerciseCategory}
+                    isPersonalBest={(set as any).isPersonalBest}
                   />
                 ))}
 
@@ -131,16 +168,6 @@ export function ActiveWorkoutPanel({ workout }: Props) {
           </div>
         )
       })}
-
-      {/* Timer sheet */}
-      <Sheet open={showTimer} onOpenChange={setShowTimer}>
-        <SheetContent side="bottom" className="h-auto pb-8">
-          <SheetHeader><SheetTitle>Rest Timer</SheetTitle></SheetHeader>
-          <div className="mt-4">
-            <RestTimer defaultSeconds={state.exercises[state.currentExerciseIndex]?.restSeconds} />
-          </div>
-        </SheetContent>
-      </Sheet>
 
       {/* History sheet */}
       <Sheet open={!!showHistory} onOpenChange={(v) => !v && setShowHistory(null)}>

@@ -2,13 +2,15 @@ import { NextRequest, NextResponse } from "next/server"
 import { exportAllDataAsJson, exportWorkoutsCsv, exportNutritionCsv } from "@/lib/export"
 import { db } from "@/db"
 import { exercises, foods, workoutSessions, loggedExercises, sets, foodLog, routines, profile } from "@/db/schema"
+import { getActiveProfileId } from "@/lib/profile"
 
 export async function GET(req: NextRequest) {
   const { searchParams } = new URL(req.url)
   const format = searchParams.get("format") ?? "json"
+  const profileId = getActiveProfileId(req)
 
   if (format === "workouts-csv") {
-    const csv = await exportWorkoutsCsv()
+    const csv = await exportWorkoutsCsv(profileId)
     return new NextResponse(csv, {
       headers: {
         "Content-Type": "text/csv",
@@ -18,7 +20,7 @@ export async function GET(req: NextRequest) {
   }
 
   if (format === "nutrition-csv") {
-    const csv = await exportNutritionCsv()
+    const csv = await exportNutritionCsv(profileId)
     return new NextResponse(csv, {
       headers: {
         "Content-Type": "text/csv",
@@ -28,7 +30,7 @@ export async function GET(req: NextRequest) {
   }
 
   // Default: full JSON backup
-  const data = await exportAllDataAsJson()
+  const data = await exportAllDataAsJson(profileId)
   return new NextResponse(JSON.stringify(data, null, 2), {
     headers: {
       "Content-Type": "application/json",

@@ -5,15 +5,18 @@ import {
   LayoutDashboard,
   Dumbbell,
   Salad,
+  Target,
   Settings,
   Activity,
 } from "lucide-react"
 import { cn } from "@/lib/utils"
+import { ProfileSwitcher } from "./ProfileSwitcher"
 
 const NAV_ITEMS = [
   { href: "/dashboard", label: "Dashboard", icon: LayoutDashboard },
   { href: "/workouts", label: "Workouts", icon: Dumbbell },
   { href: "/nutrition", label: "Nutrition", icon: Salad },
+  { href: "/goals", label: "Goals", icon: Target },
   { href: "/settings", label: "Settings", icon: Settings },
 ]
 
@@ -51,6 +54,11 @@ export function Sidebar() {
           )
         })}
       </nav>
+
+      {/* Profile Switcher */}
+      <div className="px-3 pb-2">
+        <ProfileSwitcher />
+      </div>
 
       {/* Footer */}
       <div className="px-6 py-4 border-t border-border">

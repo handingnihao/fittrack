@@ -27,6 +27,83 @@
   }
 }
 
+/* Dark theme accent variants */
+[data-theme="dark-ocean"] {
+  --primary: 199 89% 60%;
+  --ring: 199 89% 60%;
+  --primary-foreground: 240 5% 6%;
+}
+
+[data-theme="dark-forest"] {
+  --primary: 142 71% 55%;
+  --ring: 142 71% 55%;
+  --primary-foreground: 240 5% 6%;
+}
+
+[data-theme="dark-ember"] {
+  --primary: 25 95% 60%;
+  --ring: 25 95% 60%;
+  --primary-foreground: 240 5% 6%;
+}
+
+/* Light theme base */
+[data-theme^="light"] {
+  --background: 0 0% 98%;
+  --foreground: 240 10% 8%;
+  --card: 0 0% 100%;
+  --card-foreground: 240 10% 8%;
+  --popover: 0 0% 100%;
+  --popover-foreground: 240 10% 8%;
+  --secondary: 240 5% 93%;
+  --secondary-foreground: 240 10% 8%;
+  --muted: 240 5% 93%;
+  --muted-foreground: 240 5% 42%;
+  --accent: 240 5% 89%;
+  --accent-foreground: 240 10% 8%;
+  --border: 240 5% 84%;
+  --input: 240 5% 84%;
+  --primary-foreground: 0 0% 100%;
+}
+
+[data-theme="light-purple"] {
+  --primary: 263 70% 45%;
+  --ring: 263 70% 45%;
+}
+
+[data-theme="light-ocean"] {
+  --primary: 199 89% 38%;
+  --ring: 199 89% 38%;
+}
+
+[data-theme="light-forest"] {
+  --primary: 142 71% 32%;
+  --ring: 142 71% 32%;
+}
+
+[data-theme="light-ember"] {
+  --primary: 25 95% 45%;
+  --ring: 25 95% 45%;
+}
+
+/* Custom theme — accent set via inline styles; light base via data-custom-base */
+[data-theme="custom"][data-custom-base="light"] {
+  --background: 0 0% 98%;
+  --foreground: 240 10% 8%;
+  --card: 0 0% 100%;
+  --card-foreground: 240 10% 8%;
+  --popover: 0 0% 100%;
+  --popover-foreground: 240 10% 8%;
+  --secondary: 240 5% 93%;
+  --secondary-foreground: 240 10% 8%;
+  --muted: 240 5% 93%;
+  --muted-foreground: 240 5% 42%;
+  --accent: 240 5% 89%;
+  --accent-foreground: 240 10% 8%;
+  --border: 240 5% 84%;
+  --input: 240 5% 84%;
+  --primary-foreground: 0 0% 100%;
+}
+
 @layer base {
   * {
     @apply border-border;

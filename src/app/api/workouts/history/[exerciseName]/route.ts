@@ -1,7 +1,7 @@
 import { NextRequest, NextResponse } from "next/server"
 import { db } from "@/db"
 import { loggedExercises, sets, workoutSessions } from "@/db/schema"
-import { eq, desc, and } from "drizzle-orm"
+import { eq, desc, and, asc } from "drizzle-orm"
 
 export async function GET(_: NextRequest, { params }: { params: { exerciseName: string } }) {
   const exerciseName = decodeURIComponent(params.exerciseName)
@@ -29,6 +29,7 @@ export async function GET(_: NextRequest, { params }: { params: { exerciseName: 
         .select()
         .from(sets)
         .where(and(eq(sets.loggedExerciseId, ex.id), eq(sets.isWarmup, false)))
+        .orderBy(asc(sets.setNumber))
 
       const workingSets = exSets.filter((s) => !s.isWarmup)
       const maxWeight = workingSets.reduce((max, s) => Math.max(max, s.weightKg ?? 0), 0)

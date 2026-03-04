@@ -3,18 +3,20 @@ import { db } from "@/db"
 import { profile } from "@/db/schema"
 import { eq } from "drizzle-orm"
 import { UpdateProfileSchema } from "@/lib/validators"
+import { getActiveProfileId } from "@/lib/profile"
 
-export async function GET() {
-  const [row] = await db.select().from(profile).where(eq(profile.id, 1))
+export async function GET(req: NextRequest) {
+  const profileId = getActiveProfileId(req)
+  const [row] = await db.select().from(profile).where(eq(profile.id, profileId))
   if (!row) {
-    // Ensure profile row exists
-    const [created] = await db.insert(profile).values({ id: 1 }).returning()
+    const [created] = await db.insert(profile).values({ id: profileId }).returning()
     return NextResponse.json(created)
   }
   return NextResponse.json(row)
 }
 
 export async function PATCH(req: NextRequest) {
+  const profileId = getActiveProfileId(req)
   const body = await req.json()
   const parsed = UpdateProfileSchema.safeParse(body)
   if (!parsed.success) {
@@ -24,7 +26,7 @@ export async function PATCH(req: NextRequest) {
   const [updated] = await db
     .update(profile)
     .set({ ...parsed.data, updatedAt: new Date() })
-    .where(eq(profile.id, 1))
+    .where(eq(profile.id, profileId))
     .returning()
 
   return NextResponse.json(updated)

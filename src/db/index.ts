@@ -166,10 +166,134 @@ function runMigrations(sqlite: Database.Database) {
     CREATE INDEX IF NOT EXISTS food_log_date_idx ON food_log(date_str);
     CREATE INDEX IF NOT EXISTS food_log_meal_idx ON food_log(date_str, meal_type);
   `);
+
+  // Column-guarded migrations for new columns
+  const addCol = (table: string, col: string, def: string) => {
+    const exists = (sqlite.prepare(`PRAGMA table_info(${table})`).all() as { name: string }[]).some(r => r.name === col)
+    if (!exists) sqlite.exec(`ALTER TABLE ${table} ADD COLUMN ${col} ${def}`)
+  }
+  addCol('routines', 'profile_id', 'INTEGER NOT NULL DEFAULT 1')
+  addCol('workout_sessions', 'profile_id', 'INTEGER NOT NULL DEFAULT 1')
+  addCol('food_log', 'profile_id', 'INTEGER NOT NULL DEFAULT 1')
+
+  // Weight log table
+  sqlite.exec(`
+    CREATE TABLE IF NOT EXISTS weight_log (
+      id INTEGER PRIMARY KEY AUTOINCREMENT,
+      profile_id INTEGER NOT NULL DEFAULT 1,
+      weight_kg REAL NOT NULL,
+      date_str TEXT NOT NULL,
+      logged_at INTEGER NOT NULL DEFAULT (unixepoch()),
+      UNIQUE(profile_id, date_str)
+    );
+    CREATE INDEX IF NOT EXISTS weight_log_date_idx ON weight_log(date_str);
+  `)
+
+  // Gamification + new feature tables (Phase 2)
+  sqlite.exec(`
+    CREATE TABLE IF NOT EXISTS measurements (
+      id INTEGER PRIMARY KEY AUTOINCREMENT,
+      profile_id INTEGER NOT NULL DEFAULT 1,
+      date_str TEXT NOT NULL,
+      chest_cm REAL,
+      waist_cm REAL,
+      hips_cm REAL,
+      left_arm_cm REAL,
+      right_arm_cm REAL,
+      left_thigh_cm REAL,
+      right_thigh_cm REAL,
+      neck_cm REAL,
+      shoulders_cm REAL,
+      body_fat_pct REAL,
+      notes TEXT,
+      created_at INTEGER NOT NULL DEFAULT (unixepoch())
+    );
+    CREATE INDEX IF NOT EXISTS measurements_profile_date_idx ON measurements(profile_id, date_str);
+
+    CREATE TABLE IF NOT EXISTS profile_stats (
+      profile_id INTEGER PRIMARY KEY,
+      total_xp INTEGER NOT NULL DEFAULT 0,
+      level INTEGER NOT NULL DEFAULT 1,
+      streak_freeze_tokens INTEGER NOT NULL DEFAULT 0,
+      last_freeze_used_date TEXT,
+      last_freeze_earned_week TEXT,
+      lifetime_workouts INTEGER NOT NULL DEFAULT 0,
+      lifetime_prs INTEGER NOT NULL DEFAULT 0,
+      lifetime_volume_kg REAL NOT NULL DEFAULT 0
+    );
+
+    CREATE TABLE IF NOT EXISTS xp_events (
+      id INTEGER PRIMARY KEY AUTOINCREMENT,
+      profile_id INTEGER NOT NULL DEFAULT 1,
+      event_type TEXT NOT NULL,
+      xp_gained INTEGER NOT NULL,
+      ref_id INTEGER,
+      description TEXT,
+      date_str TEXT NOT NULL,
+      created_at INTEGER NOT NULL DEFAULT (unixepoch())
+    );
+    CREATE INDEX IF NOT EXISTS xp_events_profile_date_idx ON xp_events(profile_id, date_str);
+
+    CREATE TABLE IF NOT EXISTS achievements (
+      id INTEGER PRIMARY KEY AUTOINCREMENT,
+      profile_id INTEGER NOT NULL DEFAULT 1,
+      achievement_key TEXT NOT NULL,
+      unlocked_at INTEGER NOT NULL DEFAULT (unixepoch()),
+      metadata TEXT,
+      UNIQUE(profile_id, achievement_key)
+    );
+    CREATE INDEX IF NOT EXISTS achievements_profile_key_idx ON achievements(profile_id, achievement_key);
+
+    CREATE TABLE IF NOT EXISTS challenges (
+      id INTEGER PRIMARY KEY AUTOINCREMENT,
+      profile_id INTEGER NOT NULL DEFAULT 1,
+      week_str TEXT NOT NULL,
+      challenge_key TEXT NOT NULL,
+      title TEXT NOT NULL,
+      description TEXT NOT NULL,
+      target_value INTEGER NOT NULL,
+      current_value INTEGER NOT NULL DEFAULT 0,
+      is_completed INTEGER NOT NULL DEFAULT 0,
+      completed_at INTEGER,
+      xp_reward INTEGER NOT NULL DEFAULT 150,
+      created_at INTEGER NOT NULL DEFAULT (unixepoch())
+    );
+    CREATE INDEX IF NOT EXISTS challenges_profile_week_idx ON challenges(profile_id, week_str);
+
+    CREATE TABLE IF NOT EXISTS water_log (
+      id INTEGER PRIMARY KEY AUTOINCREMENT,
+      profile_id INTEGER NOT NULL DEFAULT 1,
+      date_str TEXT NOT NULL,
+      total_ml INTEGER NOT NULL DEFAULT 0,
+      goal_ml INTEGER NOT NULL DEFAULT 2500,
+      updated_at INTEGER NOT NULL DEFAULT (unixepoch()),
+      UNIQUE(profile_id, date_str)
+    );
+    CREATE INDEX IF NOT EXISTS water_log_profile_date_idx ON water_log(profile_id, date_str);
+
+    CREATE TABLE IF NOT EXISTS progress_photos (
+      id INTEGER PRIMARY KEY AUTOINCREMENT,
+      profile_id INTEGER NOT NULL DEFAULT 1,
+      date_str TEXT NOT NULL,
+      filename TEXT NOT NULL,
+      angle TEXT NOT NULL DEFAULT 'front',
+      notes TEXT,
+      created_at INTEGER NOT NULL DEFAULT (unixepoch())
+    );
+
+    CREATE TABLE IF NOT EXISTS routine_schedule (
+      id INTEGER PRIMARY KEY AUTOINCREMENT,
+      routine_id INTEGER NOT NULL REFERENCES routines(id) ON DELETE CASCADE,
+      day_of_week INTEGER NOT NULL,
+      UNIQUE(routine_id, day_of_week)
+    );
+    CREATE INDEX IF NOT EXISTS routine_schedule_routine_day_idx ON routine_schedule(routine_id, day_of_week);
+  `)
 }
 
 export const db = globalForDb.db ?? createDb();
 
-if (process.env.NODE_ENV !== "production") {
-  globalForDb.db = db;
-}
+// Always preserve the singleton — not just in dev.
+// In production Next.js may bundle routes into separate module instances
+// that all share the same globalThis, so this prevents multiple connections.
+globalForDb.db = db;

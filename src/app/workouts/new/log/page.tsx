@@ -137,7 +137,7 @@ export default function AdhocWorkoutPage() {
         const sessionRes = await fetch("/api/workouts", {
           method: "POST",
           headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({ name }),
+          body: JSON.stringify({ name, dateStr: format(new Date(), "yyyy-MM-dd") }),
         })
         const session = await sessionRes.json()
         try { localStorage.setItem(SESSION_KEY, String(session.id)) } catch {}

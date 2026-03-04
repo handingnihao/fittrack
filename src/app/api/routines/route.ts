@@ -3,11 +3,14 @@ import { db } from "@/db"
 import { routines, routineExercises, exercises } from "@/db/schema"
 import { asc, eq } from "drizzle-orm"
 import { CreateRoutineSchema } from "@/lib/validators"
+import { getActiveProfileId } from "@/lib/profile"
 
-export async function GET() {
+export async function GET(req: NextRequest) {
+  const profileId = getActiveProfileId(req)
   const allRoutines = await db
     .select()
     .from(routines)
+    .where(eq(routines.profileId, profileId))
     .orderBy(asc(routines.sortOrder), asc(routines.createdAt))
 
   // Fetch exercises for each routine
@@ -39,10 +42,11 @@ export async function GET() {
 }
 
 export async function POST(req: NextRequest) {
+  const profileId = getActiveProfileId(req)
   const body = await req.json()
   const parsed = CreateRoutineSchema.safeParse(body)
   if (!parsed.success) return NextResponse.json({ error: parsed.error.flatten() }, { status: 400 })
 
-  const [routine] = await db.insert(routines).values(parsed.data).returning()
+  const [routine] = await db.insert(routines).values({ ...parsed.data, profileId }).returning()
   return NextResponse.json({ ...routine, exercises: [] }, { status: 201 })
 }
