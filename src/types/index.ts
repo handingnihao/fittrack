@@ -47,6 +47,9 @@ export interface ActiveSet {
   weightKg: number | null;
   distanceM?: number | null;
   durationSec?: number | null;
+  incline?: number | null;
+  resistance?: number | null;
+  speedMph?: number | null;
   isWarmup: boolean;
   isDropSet: boolean;
   isPersonalBest?: boolean;
@@ -60,7 +63,12 @@ export interface ActiveExercise {
   loggedExerciseId?: number;
   restSeconds: number;
   sets: ActiveSet[];
-  previousSets?: Array<{ weightKg: number | null; reps: number | null }>;
+  previousSets?: Array<{
+    weightKg: number | null;
+    reps: number | null;
+    distanceM?: number | null;
+    durationSec?: number | null;
+  }>;
 }
 
 export interface ActiveWorkoutState {
@@ -97,7 +105,7 @@ export interface ExerciseHistoryPoint {
   totalVolume: number; // sets × reps × weight
   maxReps: number | null;
   sessionName: string;
-  sets: Array<{ weightKg: number | null; reps: number | null }>;
+  sets: Array<{ weightKg: number | null; reps: number | null; distanceM?: number | null; durationSec?: number | null }>;
 }
 
 export interface RoutineWithExercises {

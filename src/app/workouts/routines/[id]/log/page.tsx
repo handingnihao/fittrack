@@ -120,6 +120,7 @@ export default function ActiveWorkoutPage({ params }: { params: { id: string } }
                   return {
                     exerciseId: le.exerciseId,
                     exerciseName: le.exerciseName,
+                    exerciseCategory: (le as any).exerciseCategory ?? undefined,
                     loggedExerciseId: le.id,
                     restSeconds: routineEx?.restSeconds ?? 90,
                     sets: allSets,
@@ -163,11 +164,12 @@ export default function ActiveWorkoutPage({ params }: { params: { id: string } }
         const loggedExs = await exRes.json()
 
         const activeExercises: ActiveExercise[] = loggedExs.map(
-          (le: { id: number; exerciseId: number; exerciseName: string }, idx: number) => {
+          (le: { id: number; exerciseId: number; exerciseName: string; exerciseCategory?: string }, idx: number) => {
             const routineEx = routine.exercises[idx]
             return {
               exerciseId: le.exerciseId,
               exerciseName: le.exerciseName,
+              exerciseCategory: le.exerciseCategory ?? undefined,
               loggedExerciseId: le.id,
               restSeconds: routineEx?.restSeconds ?? 90,
               sets: Array.from({ length: routineEx?.defaultSets ?? 3 }, (_, i) => ({
@@ -206,6 +208,7 @@ export default function ActiveWorkoutPage({ params }: { params: { id: string } }
       const newEx: ActiveExercise = {
         exerciseId: ex.id,
         exerciseName: ex.name,
+        exerciseCategory: logged.exerciseCategory ?? ex.category,
         loggedExerciseId: logged.id,
         restSeconds: 90,
         sets: [{ setNumber: 1, reps: null, weightKg: null, isWarmup: false, isDropSet: false, completed: false }],

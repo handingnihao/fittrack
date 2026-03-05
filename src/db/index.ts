@@ -175,6 +175,17 @@ function runMigrations(sqlite: Database.Database) {
   addCol('routines', 'profile_id', 'INTEGER NOT NULL DEFAULT 1')
   addCol('workout_sessions', 'profile_id', 'INTEGER NOT NULL DEFAULT 1')
   addCol('food_log', 'profile_id', 'INTEGER NOT NULL DEFAULT 1')
+  addCol('sets', 'incline', 'REAL')
+  addCol('sets', 'resistance', 'REAL')
+  addCol('sets', 'speed_mph', 'REAL')
+
+  // Insert missing exercises (idempotent)
+  const insertExIfMissing = (name: string, category: string, equipment: string, muscleGroup: string) => {
+    sqlite.prepare(`INSERT OR IGNORE INTO exercises (name, category, equipment, muscle_group, is_custom) VALUES (?, ?, ?, ?, 0)`)
+      .run(name, category, equipment, muscleGroup)
+  }
+  insertExIfMissing('Outdoor Walk', 'cardio', 'bodyweight', 'Full Body')
+  insertExIfMissing('Treadmill Walk', 'cardio', 'machine', 'Full Body')
 
   // Weight log table
   sqlite.exec(`

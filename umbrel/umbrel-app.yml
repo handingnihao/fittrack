@@ -2,7 +2,7 @@ manifestVersion: 1
 id: mcwiseman97-umbrel-app-store-fittrack
 category: fitness
 name: FitTrack
-version: "1.1.0"
+version: "1.2.0"
 tagline: Workout & nutrition tracker for your home server
 description: >-
   FitTrack is a sleek, self-hosted workout and nutrition tracking app.

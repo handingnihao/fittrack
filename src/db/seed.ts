@@ -92,6 +92,8 @@ const SEED_EXERCISES = [
   { name: "Elliptical", category: "cardio", equipment: "machine", muscleGroup: "Full Body" },
   { name: "Burpee", category: "cardio", equipment: "bodyweight", muscleGroup: "Full Body" },
   { name: "Box Jump", category: "cardio", equipment: "other", muscleGroup: "Legs" },
+  { name: "Outdoor Walk", category: "cardio", equipment: "bodyweight", muscleGroup: "Full Body" },
+  { name: "Treadmill Walk", category: "cardio", equipment: "machine", muscleGroup: "Full Body" },
 ] as const;
 
 export async function seedExercises() {

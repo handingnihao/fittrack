@@ -174,6 +174,9 @@ export const sets = sqliteTable(
     durationSec: integer("duration_sec"),
     distanceM: real("distance_m"),
     rpe: real("rpe"),
+    incline: real("incline"),
+    resistance: real("resistance"),
+    speedMph: real("speed_mph"),
     isWarmup: integer("is_warmup", { mode: "boolean" }).notNull().default(false),
     isDropSet: integer("is_drop_set", { mode: "boolean" })
       .notNull()

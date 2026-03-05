@@ -45,7 +45,7 @@ export async function GET(_: NextRequest, { params }: { params: { exerciseName: 
         maxWeightKg: maxWeight || null,
         totalVolume: Math.round(totalVolume),
         maxReps: maxReps || null,
-        sets: workingSets.map((s) => ({ reps: s.reps, weightKg: s.weightKg })),
+        sets: workingSets.map((s) => ({ reps: s.reps, weightKg: s.weightKg, distanceM: s.distanceM, durationSec: s.durationSec })),
       }
     })
   )

@@ -76,8 +76,11 @@ export function ActiveWorkoutPanel({ workout }: Props) {
         const isActive = exIdx === state.currentExerciseIndex
         const collapsed = collapsedExercises.has(exIdx)
         const completedSets = ex.sets.filter((s) => s.completed).length
-        const overloadHint = getOverloadSuggestion(ex)
         const isCardio = (ex as any).exerciseCategory === "cardio"
+        const overloadHint = isCardio ? null : getOverloadSuggestion(ex)
+        const nameLower = ex.exerciseName?.toLowerCase() ?? ""
+        const isTreadmill = nameLower.includes("treadmill")
+        const isBike = nameLower.includes("bike") || nameLower.includes("cycle") || nameLower.includes("stationary")
 
         return (
           <div
@@ -135,6 +138,9 @@ export function ActiveWorkoutPanel({ workout }: Props) {
                   <span className="w-14 text-center hidden sm:block">Prev</span>
                   <span className="flex-1 text-center">{isCardio ? "mi" : "lbs"}</span>
                   <span className="flex-1 text-center">{isCardio ? "MM:SS" : "reps"}</span>
+                  {isCardio && isTreadmill && <span className="w-16 text-center">mph</span>}
+                  {isCardio && isTreadmill && <span className="w-16 text-center">incline</span>}
+                  {isCardio && isBike && <span className="w-16 text-center">resist.</span>}
                   <span className="w-9" />
                   <span className="w-7" />
                 </div>
@@ -149,7 +155,9 @@ export function ActiveWorkoutPanel({ workout }: Props) {
                     onRemove={() => removeSet(exIdx, setIdx)}
                     previousWeight={ex.previousSets?.[setIdx]?.weightKg ?? null}
                     previousReps={ex.previousSets?.[setIdx]?.reps ?? null}
+                    previousDistanceM={ex.previousSets?.[setIdx]?.distanceM ?? null}
                     exerciseCategory={(ex as any).exerciseCategory}
+                    exerciseName={ex.exerciseName}
                     isPersonalBest={(set as any).isPersonalBest}
                   />
                 ))}

@@ -164,6 +164,7 @@ export default function AdhocWorkoutPage() {
       const newEx: ActiveExercise = {
         exerciseId: ex.id,
         exerciseName: ex.name,
+        exerciseCategory: logged.exerciseCategory ?? ex.category,
         loggedExerciseId: logged.id,
         restSeconds: 90,
         sets: [{ setNumber: 1, reps: null, weightKg: null, isWarmup: false, isDropSet: false, completed: false }],

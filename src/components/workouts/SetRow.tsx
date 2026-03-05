@@ -15,7 +15,9 @@ interface Props {
   onRemove: () => void
   previousWeight?: number | null
   previousReps?: number | null
+  previousDistanceM?: number | null
   exerciseCategory?: string
+  exerciseName?: string
   isPersonalBest?: boolean
 }
 
@@ -30,8 +32,11 @@ function formatDuration(sec: number): string {
   return `${m}:${String(s).padStart(2, "0")}`
 }
 
-export function SetRow({ set, setIndex, onUpdate, onComplete, onRemove, previousWeight, previousReps, exerciseCategory, isPersonalBest }: Props) {
+export function SetRow({ set, setIndex, onUpdate, onComplete, onRemove, previousWeight, previousReps, previousDistanceM, exerciseCategory, exerciseName, isPersonalBest }: Props) {
   const isCardio = exerciseCategory === "cardio"
+  const nameLower = exerciseName?.toLowerCase() ?? ""
+  const isTreadmill = nameLower.includes("treadmill")
+  const isBike = nameLower.includes("bike") || nameLower.includes("cycle") || nameLower.includes("stationary")
 
   const [weightStr, setWeightStr] = useState(() => {
     if (set.weightKg == null) return ""
@@ -48,6 +53,21 @@ export function SetRow({ set, setIndex, onUpdate, onComplete, onRemove, previous
     const sec = (set as any).durationSec ?? null
     if (sec == null) return ""
     return formatDuration(sec)
+  })
+
+  const [inclineStr, setInclineStr] = useState(() => {
+    const v = (set as any).incline ?? null
+    return v == null ? "" : String(v)
+  })
+
+  const [resistanceStr, setResistanceStr] = useState(() => {
+    const v = (set as any).resistance ?? null
+    return v == null ? "" : String(v)
+  })
+
+  const [speedMphStr, setSpeedMphStr] = useState(() => {
+    const v = (set as any).speedMph ?? null
+    return v == null ? "" : String(v)
   })
 
   // Sync when weightKg changes from outside (e.g. plate calculator confirm)
@@ -96,6 +116,40 @@ export function SetRow({ set, setIndex, onUpdate, onComplete, onRemove, previous
     }
   }
 
+  function handleInclineBlur() {
+    const parsed = parseFloat(inclineStr)
+    if (!isNaN(parsed) && parsed >= 0) {
+      onUpdate("incline" as keyof ActiveSet, parsed)
+    } else if (inclineStr === "") {
+      onUpdate("incline" as keyof ActiveSet, null)
+    }
+  }
+
+  function handleResistanceBlur() {
+    const parsed = parseFloat(resistanceStr)
+    if (!isNaN(parsed) && parsed >= 0) {
+      onUpdate("resistance" as keyof ActiveSet, parsed)
+    } else if (resistanceStr === "") {
+      onUpdate("resistance" as keyof ActiveSet, null)
+    }
+  }
+
+  function handleSpeedBlur() {
+    const parsed = parseFloat(speedMphStr)
+    if (!isNaN(parsed) && parsed > 0) {
+      onUpdate("speedMph" as keyof ActiveSet, parsed)
+      // Auto-calculate distance from speed × duration
+      const durSec = (set as any).durationSec as number | null
+      if (durSec && durSec > 0) {
+        const distMi = parsed * (durSec / 3600)
+        onUpdate("distanceM" as keyof ActiveSet, distMi * 1609.344)
+        setDistanceMiStr(distMi.toFixed(2))
+      }
+    } else if (speedMphStr === "") {
+      onUpdate("speedMph" as keyof ActiveSet, null)
+    }
+  }
+
   // Compute pace (min/mi) for cardio
   const distanceM = (set as any).distanceM as number | null
   const durationSec = (set as any).durationSec as number | null
@@ -139,7 +193,9 @@ export function SetRow({ set, setIndex, onUpdate, onComplete, onRemove, previous
 
       {/* Previous performance hint */}
       <div className="w-14 text-center hidden sm:block">
-        {previousWeight && previousReps ? (
+        {isCardio && previousDistanceM ? (
+          <p className="text-xs text-muted-foreground">{(previousDistanceM / 1609.344).toFixed(2)} mi</p>
+        ) : (!isCardio && previousWeight && previousReps) ? (
           <p className="text-xs text-muted-foreground">{kgToLbs(previousWeight)}×{previousReps}</p>
         ) : (
           <p className="text-xs text-muted-foreground">—</p>
@@ -147,7 +203,7 @@ export function SetRow({ set, setIndex, onUpdate, onComplete, onRemove, previous
       </div>
 
       {isCardio ? (
-        /* Cardio inputs: distance (mi) + duration (MM:SS) */
+        /* Cardio inputs: distance (mi) + duration (MM:SS) [+ incline or resistance] */
         <>
           <div className="flex-1">
             <Input
@@ -172,8 +228,50 @@ export function SetRow({ set, setIndex, onUpdate, onComplete, onRemove, previous
               disabled={set.completed}
             />
           </div>
-          {/* Pace display */}
-          {paceMinsPerMile && (
+          {isTreadmill && (
+            <div className="w-16">
+              <Input
+                type="text"
+                inputMode="decimal"
+                value={speedMphStr}
+                onChange={(e) => setSpeedMphStr(e.target.value)}
+                onBlur={handleSpeedBlur}
+                placeholder="mph"
+                className="h-9 text-center text-sm"
+                disabled={set.completed}
+              />
+            </div>
+          )}
+          {isTreadmill && (
+            <div className="w-16">
+              <Input
+                type="text"
+                inputMode="decimal"
+                value={inclineStr}
+                onChange={(e) => setInclineStr(e.target.value)}
+                onBlur={handleInclineBlur}
+                placeholder="% inc"
+                className="h-9 text-center text-sm"
+                disabled={set.completed}
+              />
+            </div>
+          )}
+          {isBike && (
+            <div className="w-16">
+              <Input
+                type="text"
+                inputMode="decimal"
+                value={resistanceStr}
+                onChange={(e) => setResistanceStr(e.target.value)}
+                onBlur={handleResistanceBlur}
+                placeholder="lvl"
+                className="h-9 text-center text-sm"
+                disabled={set.completed}
+              />
+            </div>
+          )}
+          {/* Pace display for non-treadmill, non-bike cardio */}
+          {paceMinsPerMile && !isBike && !isTreadmill && (
             <div className="text-xs text-muted-foreground w-12 text-center shrink-0">
               {paceMinsPerMile.toFixed(1)}<span className="text-[10px]">min/mi</span>
             </div>
