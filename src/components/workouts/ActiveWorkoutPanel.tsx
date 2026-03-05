@@ -133,16 +133,37 @@ export function ActiveWorkoutPanel({ workout }: Props) {
                 )}
 
                 {/* Column headers */}
-                <div className="flex items-center gap-2 px-2 text-xs text-muted-foreground">
-                  <span className="w-7" />
-                  <span className="w-14 text-center hidden sm:block">Prev</span>
-                  <span className="flex-1 text-center">{isCardio ? "mi" : "lbs"}</span>
-                  <span className="flex-1 text-center">{isCardio ? "MM:SS" : "reps"}</span>
-                  {isCardio && isTreadmill && <span className="w-16 text-center">mph</span>}
-                  {isCardio && isTreadmill && <span className="w-16 text-center">incline</span>}
-                  {isCardio && isBike && <span className="w-16 text-center">resist.</span>}
-                  <span className="w-9" />
-                  <span className="w-7" />
+                <div className="space-y-0.5">
+                  {/* Primary header row */}
+                  <div className="flex items-center gap-2 px-2 text-xs text-muted-foreground">
+                    <span className="w-7" />
+                    <span className="w-14 text-center hidden sm:block">Prev</span>
+                    <span className="flex-1 text-center">{isCardio ? "mi" : "lbs"}</span>
+                    <span className="flex-1 text-center">{isCardio ? "MM:SS" : "reps"}</span>
+                    <span className="w-9" />
+                    <span className="w-7" />
+                  </div>
+                  {/* Secondary header row for treadmill / bike */}
+                  {isCardio && isTreadmill && (
+                    <div className="flex items-center gap-2 px-2 text-xs text-muted-foreground">
+                      <span className="w-7" />
+                      <span className="hidden sm:block w-14" />
+                      <span className="flex-1 text-center">mph</span>
+                      <span className="flex-1 text-center">incline</span>
+                      <span className="w-9" />
+                      <span className="w-7" />
+                    </div>
+                  )}
+                  {isCardio && isBike && (
+                    <div className="flex items-center gap-2 px-2 text-xs text-muted-foreground">
+                      <span className="w-7" />
+                      <span className="hidden sm:block w-14" />
+                      <span className="flex-1 text-center">resist.</span>
+                      <span className="flex-1" />
+                      <span className="w-9" />
+                      <span className="w-7" />
+                    </div>
+                  )}
                 </div>
 
                 {ex.sets.map((set, setIdx) => (

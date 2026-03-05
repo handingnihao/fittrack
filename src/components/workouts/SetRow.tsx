@@ -1,5 +1,5 @@
 "use client"
-import { Check, Trash2, Scale, Trophy, Timer, Ruler } from "lucide-react"
+import { Check, Trash2, Scale, Trophy } from "lucide-react"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { cn, kgToLbs, lbsToKg } from "@/lib/utils"
@@ -44,7 +44,6 @@ export function SetRow({ set, setIndex, onUpdate, onComplete, onRemove, previous
     return Number.isInteger(lbs) ? String(lbs) : lbs.toFixed(1)
   })
 
-  // Cardio: distance in miles, duration in seconds
   const [distanceMiStr, setDistanceMiStr] = useState(() => {
     if ((set as any).distanceM == null) return ""
     return ((set as any).distanceM / 1609.344).toFixed(2)
@@ -70,7 +69,6 @@ export function SetRow({ set, setIndex, onUpdate, onComplete, onRemove, previous
     return v == null ? "" : String(v)
   })
 
-  // Sync when weightKg changes from outside (e.g. plate calculator confirm)
   useEffect(() => {
     if (set.weightKg == null) {
       setWeightStr("")
@@ -103,7 +101,6 @@ export function SetRow({ set, setIndex, onUpdate, onComplete, onRemove, previous
   }
 
   function handleDurationBlur() {
-    // Parse MM:SS or plain seconds
     const parts = durationStr.split(":")
     let sec = 0
     if (parts.length === 2) {
@@ -138,7 +135,6 @@ export function SetRow({ set, setIndex, onUpdate, onComplete, onRemove, previous
     const parsed = parseFloat(speedMphStr)
     if (!isNaN(parsed) && parsed > 0) {
       onUpdate("speedMph" as keyof ActiveSet, parsed)
-      // Auto-calculate distance from speed × duration
       const durSec = (set as any).durationSec as number | null
       if (durSec && durSec > 0) {
         const distMi = parsed * (durSec / 3600)
@@ -150,7 +146,6 @@ export function SetRow({ set, setIndex, onUpdate, onComplete, onRemove, previous
     }
   }
 
-  // Compute pace (min/mi) for cardio
   const distanceM = (set as any).distanceM as number | null
   const durationSec = (set as any).durationSec as number | null
   const paceMinsPerMile = distanceM && durationSec && distanceM > 0
@@ -164,23 +159,25 @@ export function SetRow({ set, setIndex, onUpdate, onComplete, onRemove, previous
       ? (() => { const lbs = kgToLbs(previousWeight); return Number.isInteger(lbs) ? String(lbs) : lbs.toFixed(1) })()
       : "lbs"
 
-  // 1RM estimate
   const oneRM = !isCardio && !set.isWarmup && set.weightKg != null && set.reps != null && set.reps >= 2
     ? epley1RM(set.weightKg, set.reps)
     : null
 
   const showPR = isPersonalBest || (set as any).isPersonalBest
 
+  // Cardio exercises with extra fields get a second sub-row
+  const hasSecondaryRow = isTreadmill || isBike
+
   return (
     <div className={cn(
-      "flex items-center gap-2 py-2 px-2 rounded-lg transition-all",
+      "flex items-start gap-2 py-2 px-2 rounded-lg transition-all",
       set.completed ? "bg-neon-green/5 border border-neon-green/20" : "hover:bg-secondary/50",
       set.isWarmup ? "opacity-70" : ""
     )}>
       {/* Set number / type */}
       <button
         className={cn(
-          "w-7 h-7 rounded-full flex items-center justify-center text-xs font-bold shrink-0 transition-colors border",
+          "w-7 h-9 rounded-full flex items-center justify-center text-xs font-bold shrink-0 transition-colors border mt-0",
           set.isWarmup
             ? "border-yellow-500/40 text-yellow-500 bg-yellow-500/10"
             : "border-border text-muted-foreground hover:border-primary/50"
@@ -191,8 +188,8 @@ export function SetRow({ set, setIndex, onUpdate, onComplete, onRemove, previous
         {set.isWarmup ? "W" : set.setNumber}
       </button>
 
-      {/* Previous performance hint */}
-      <div className="w-14 text-center hidden sm:block">
+      {/* Previous performance hint — hidden on mobile */}
+      <div className="w-14 text-center hidden sm:flex items-center justify-center" style={{ minHeight: 36 }}>
         {isCardio && previousDistanceM ? (
           <p className="text-xs text-muted-foreground">{(previousDistanceM / 1609.344).toFixed(2)} mi</p>
         ) : (!isCardio && previousWeight && previousReps) ? (
@@ -202,167 +199,170 @@ export function SetRow({ set, setIndex, onUpdate, onComplete, onRemove, previous
         )}
       </div>
 
-      {isCardio ? (
-        /* Cardio inputs: distance (mi) + duration (MM:SS) [+ incline or resistance] */
-        <>
-          <div className="flex-1">
-            <Input
-              type="text"
-              inputMode="decimal"
-              value={distanceMiStr}
-              onChange={(e) => setDistanceMiStr(e.target.value)}
-              onBlur={handleDistanceBlur}
-              placeholder="mi"
-              className="h-9 text-center text-sm"
-              disabled={set.completed}
-            />
-          </div>
-          <div className="flex-1">
-            <Input
-              type="text"
-              value={durationStr}
-              onChange={(e) => setDurationStr(e.target.value)}
-              onBlur={handleDurationBlur}
-              placeholder="MM:SS"
-              className="h-9 text-center text-sm"
-              disabled={set.completed}
-            />
-          </div>
-          {isTreadmill && (
-            <div className="w-16">
+      {/* Input area — flex-col so secondary row wraps below */}
+      <div className="flex-1 flex flex-col gap-1.5 min-w-0">
+        {isCardio ? (
+          <>
+            {/* Primary row: distance + duration */}
+            <div className="flex gap-2">
               <Input
                 type="text"
                 inputMode="decimal"
-                value={speedMphStr}
-                onChange={(e) => setSpeedMphStr(e.target.value)}
-                onBlur={handleSpeedBlur}
-                placeholder="mph"
-                className="h-9 text-center text-sm"
+                value={distanceMiStr}
+                onChange={(e) => setDistanceMiStr(e.target.value)}
+                onBlur={handleDistanceBlur}
+                placeholder="mi"
+                className="h-10 text-center text-sm flex-1 min-w-0"
                 disabled={set.completed}
               />
-            </div>
-          )}
-          {isTreadmill && (
-            <div className="w-16">
               <Input
                 type="text"
-                inputMode="decimal"
-                value={inclineStr}
-                onChange={(e) => setInclineStr(e.target.value)}
-                onBlur={handleInclineBlur}
-                placeholder="% inc"
-                className="h-9 text-center text-sm"
+                value={durationStr}
+                onChange={(e) => setDurationStr(e.target.value)}
+                onBlur={handleDurationBlur}
+                placeholder="MM:SS"
+                className="h-10 text-center text-sm flex-1 min-w-0"
                 disabled={set.completed}
               />
             </div>
-          )}
-          {isBike && (
-            <div className="w-16">
-              <Input
-                type="text"
-                inputMode="decimal"
-                value={resistanceStr}
-                onChange={(e) => setResistanceStr(e.target.value)}
-                onBlur={handleResistanceBlur}
-                placeholder="lvl"
-                className="h-9 text-center text-sm"
-                disabled={set.completed}
-              />
-            </div>
-          )}
-          {/* Pace display for non-treadmill, non-bike cardio */}
-          {paceMinsPerMile && !isBike && !isTreadmill && (
-            <div className="text-xs text-muted-foreground w-12 text-center shrink-0">
-              {paceMinsPerMile.toFixed(1)}<span className="text-[10px]">min/mi</span>
-            </div>
-          )}
-        </>
-      ) : (
-        /* Strength inputs: weight + reps */
-        <>
-          <div className="flex-1 flex items-center gap-1">
-            <Input
-              type="text"
-              inputMode="decimal"
-              value={weightStr}
-              onChange={(e) => setWeightStr(e.target.value)}
-              onBlur={handleWeightBlur}
-              placeholder={weightPlaceholder}
-              className="h-9 text-center text-sm [appearance:textfield] [&::-webkit-outer-spin-button]:appearance-none [&::-webkit-inner-spin-button]:appearance-none"
-              disabled={set.completed}
-            />
-            {!set.completed && (
-              <PlateCalculator currentWeightLbs={currentLbs} onConfirm={handlePlateConfirm}>
-                <Button
-                  variant="ghost"
-                  size="icon"
-                  className="h-9 w-9 shrink-0 text-muted-foreground hover:text-primary"
-                  title="Plate calculator"
-                  type="button"
-                >
-                  <Scale className="w-4 h-4" />
-                </Button>
-              </PlateCalculator>
+
+            {/* Secondary row: speed + incline (treadmill) or resistance (bike) */}
+            {isTreadmill && (
+              <div className="flex gap-2">
+                <Input
+                  type="text"
+                  inputMode="decimal"
+                  value={speedMphStr}
+                  onChange={(e) => setSpeedMphStr(e.target.value)}
+                  onBlur={handleSpeedBlur}
+                  placeholder="mph"
+                  className="h-10 text-center text-sm flex-1 min-w-0"
+                  disabled={set.completed}
+                />
+                <Input
+                  type="text"
+                  inputMode="decimal"
+                  value={inclineStr}
+                  onChange={(e) => setInclineStr(e.target.value)}
+                  onBlur={handleInclineBlur}
+                  placeholder="% inc"
+                  className="h-10 text-center text-sm flex-1 min-w-0"
+                  disabled={set.completed}
+                />
+              </div>
             )}
+            {isBike && (
+              <div className="flex gap-2">
+                <Input
+                  type="text"
+                  inputMode="decimal"
+                  value={resistanceStr}
+                  onChange={(e) => setResistanceStr(e.target.value)}
+                  onBlur={handleResistanceBlur}
+                  placeholder="resist."
+                  className="h-10 text-center text-sm flex-1 min-w-0"
+                  disabled={set.completed}
+                />
+                <div className="flex-1" /> {/* spacer so resist. field takes half width */}
+              </div>
+            )}
+
+            {/* Pace for non-treadmill, non-bike */}
+            {paceMinsPerMile && !isBike && !isTreadmill && (
+              <div className="text-xs text-muted-foreground text-center">
+                {paceMinsPerMile.toFixed(1)} <span className="text-[10px]">min/mi</span>
+              </div>
+            )}
+          </>
+        ) : (
+          /* Strength: weight + reps in one row */
+          <div className="flex gap-2">
+            <div className="flex-1 flex items-center gap-1 min-w-0">
+              <Input
+                type="text"
+                inputMode="decimal"
+                value={weightStr}
+                onChange={(e) => setWeightStr(e.target.value)}
+                onBlur={handleWeightBlur}
+                placeholder={weightPlaceholder}
+                className="h-10 text-center text-sm flex-1 min-w-0 [appearance:textfield] [&::-webkit-outer-spin-button]:appearance-none [&::-webkit-inner-spin-button]:appearance-none"
+                disabled={set.completed}
+              />
+              {!set.completed && (
+                <PlateCalculator currentWeightLbs={currentLbs} onConfirm={handlePlateConfirm}>
+                  <Button
+                    variant="ghost"
+                    size="icon"
+                    className="h-10 w-9 shrink-0 text-muted-foreground hover:text-primary"
+                    title="Plate calculator"
+                    type="button"
+                  >
+                    <Scale className="w-4 h-4" />
+                  </Button>
+                </PlateCalculator>
+              )}
+            </div>
+            <div className="flex-1">
+              <Input
+                type="number"
+                step="1"
+                min="0"
+                value={set.reps ?? ""}
+                onChange={(e) => onUpdate("reps", e.target.value ? parseInt(e.target.value) : null)}
+                placeholder="reps"
+                className="h-10 text-center text-sm"
+                disabled={set.completed}
+              />
+            </div>
           </div>
+        )}
+      </div>
 
-          <div className="flex-1">
-            <Input
-              type="number"
-              step="1"
-              min="0"
-              value={set.reps ?? ""}
-              onChange={(e) => onUpdate("reps", e.target.value ? parseInt(e.target.value) : null)}
-              placeholder="reps"
-              className="h-9 text-center text-sm"
-              disabled={set.completed}
-            />
+      {/* Right-side actions */}
+      <div className="flex flex-col items-center gap-1 shrink-0">
+        {/* PR badge */}
+        {showPR && (
+          <div title="Personal Best!" className="h-10 flex items-center justify-center">
+            <Trophy className="w-4 h-4 text-yellow-400" />
           </div>
-        </>
-      )}
+        )}
 
-      {/* PR badge */}
-      {showPR && (
-        <div className="shrink-0" title="Personal Best!">
-          <Trophy className="w-4 h-4 text-yellow-400" />
-        </div>
-      )}
+        {/* 1RM estimate */}
+        {oneRM && !showPR && (
+          <div className="text-[10px] text-muted-foreground hidden sm:flex items-center h-10 whitespace-nowrap">
+            ~{Math.round(kgToLbs(oneRM))} 1RM
+          </div>
+        )}
 
-      {/* 1RM estimate */}
-      {oneRM && !showPR && (
-        <div className="text-[10px] text-muted-foreground shrink-0 hidden sm:block whitespace-nowrap">
-          ~{Math.round(kgToLbs(oneRM))} 1RM
-        </div>
-      )}
+        {/* Complete button */}
+        {set.completed ? (
+          <div className="w-9 h-10 flex items-center justify-center rounded-lg bg-neon-green/20">
+            <Check className="w-4 h-4 text-neon-green" />
+          </div>
+        ) : (
+          <Button
+            variant="ghost"
+            size="icon-sm"
+            className="w-9 h-10 rounded-lg hover:bg-neon-green/20 hover:text-neon-green transition-colors"
+            onClick={onComplete}
+            disabled={isCardio
+              ? ((set as any).distanceM == null && (set as any).durationSec == null)
+              : (set.reps === null && set.weightKg === null)}
+          >
+            <Check className="w-4 h-4" />
+          </Button>
+        )}
 
-      {/* Complete / remove */}
-      {set.completed ? (
-        <div className="w-9 h-9 flex items-center justify-center rounded-lg bg-neon-green/20">
-          <Check className="w-4 h-4 text-neon-green" />
-        </div>
-      ) : (
         <Button
           variant="ghost"
           size="icon-sm"
-          className="w-9 h-9 rounded-lg hover:bg-neon-green/20 hover:text-neon-green transition-colors shrink-0"
-          onClick={onComplete}
-          disabled={isCardio
-            ? ((set as any).distanceM == null && (set as any).durationSec == null)
-            : (set.reps === null && set.weightKg === null)}
+          className="w-7 h-7 text-muted-foreground hover:text-destructive"
+          onClick={onRemove}
+          disabled={set.completed}
         >
-          <Check className="w-4 h-4" />
+          <Trash2 className="w-3 h-3" />
         </Button>
-      )}
-
-      <Button
-        variant="ghost"
-        size="icon-sm"
-        className="w-7 h-7 text-muted-foreground hover:text-destructive shrink-0"
-        onClick={onRemove}
-        disabled={set.completed}
-      >
-        <Trash2 className="w-3 h-3" />
-      </Button>
+      </div>
     </div>
   )
 }
