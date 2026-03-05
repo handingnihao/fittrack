@@ -23,10 +23,34 @@ interface RoutineExerciseSlot {
   defaultWeightKg: number | null
   restSeconds: number
   routineExerciseId?: number
+  // Cardio fields
+  defaultDurationSec: number | null
+  defaultDistanceM: number | null
+  defaultSpeedMph: number | null
+  defaultIncline: number | null
+  defaultResistance: number | null
 }
 
 interface Props {
   routine?: RoutineWithExercises
+}
+
+function formatDuration(sec: number | null): string {
+  if (!sec) return ""
+  const m = Math.floor(sec / 60)
+  const s = sec % 60
+  return `${m}:${String(s).padStart(2, "0")}`
+}
+
+function parseDuration(str: string): number | null {
+  if (!str.trim()) return null
+  const parts = str.split(":")
+  if (parts.length === 2) {
+    const sec = parseInt(parts[0]) * 60 + parseInt(parts[1])
+    return isNaN(sec) ? null : sec
+  }
+  const sec = parseInt(str)
+  return isNaN(sec) ? null : sec
 }
 
 export function RoutineForm({ routine }: Props) {
@@ -45,12 +69,18 @@ export function RoutineForm({ routine }: Props) {
       defaultWeightKg: e.defaultWeightKg,
       restSeconds: e.restSeconds,
       routineExerciseId: e.id,
+      defaultDurationSec: e.defaultDurationSec ?? null,
+      defaultDistanceM: e.defaultDistanceM ?? null,
+      defaultSpeedMph: e.defaultSpeedMph ?? null,
+      defaultIncline: e.defaultIncline ?? null,
+      defaultResistance: e.defaultResistance ?? null,
     })) ?? []
   )
   const [showSelector, setShowSelector] = useState(false)
   const [saving, setSaving] = useState(false)
 
   const addExercise = (ex: Exercise) => {
+    const isCardio = ex.category === "cardio"
     setExercises((prev) => [
       ...prev,
       {
@@ -58,10 +88,15 @@ export function RoutineForm({ routine }: Props) {
         exerciseName: ex.name,
         category: ex.category,
         defaultSets: 3,
-        defaultRepsMin: 8,
-        defaultRepsMax: 12,
+        defaultRepsMin: isCardio ? 0 : 8,
+        defaultRepsMax: isCardio ? 0 : 12,
         defaultWeightKg: null,
-        restSeconds: 90,
+        restSeconds: isCardio ? 60 : 90,
+        defaultDurationSec: isCardio ? 1800 : null, // 30 min default
+        defaultDistanceM: null,
+        defaultSpeedMph: null,
+        defaultIncline: null,
+        defaultResistance: null,
       },
     ])
   }
@@ -79,7 +114,6 @@ export function RoutineForm({ routine }: Props) {
     setSaving(true)
 
     const isEdit = !!routine?.id
-
     const url = isEdit ? `/api/routines/${routine!.id}` : "/api/routines"
     const method = isEdit ? "PATCH" : "POST"
 
@@ -94,9 +128,7 @@ export function RoutineForm({ routine }: Props) {
     const savedRoutine = await res.json()
     const routineId = savedRoutine.id
 
-    // Save exercises (delete all + re-insert for simplicity)
     if (isEdit) {
-      // Remove all existing
       for (const ex of routine!.exercises) {
         await fetch(`/api/routines/${routineId}/exercises?routineExerciseId=${ex.id}`, { method: "DELETE" })
       }
@@ -115,6 +147,11 @@ export function RoutineForm({ routine }: Props) {
           defaultRepsMax: ex.defaultRepsMax,
           defaultWeightKg: ex.defaultWeightKg,
           restSeconds: ex.restSeconds,
+          defaultDurationSec: ex.defaultDurationSec,
+          defaultDistanceM: ex.defaultDistanceM,
+          defaultSpeedMph: ex.defaultSpeedMph,
+          defaultIncline: ex.defaultIncline,
+          defaultResistance: ex.defaultResistance,
         }),
       })
     }
@@ -168,44 +205,174 @@ export function RoutineForm({ routine }: Props) {
           </Button>
         </div>
 
-        {exercises.map((ex, idx) => (
-          <div key={idx} className="bento-card space-y-3">
-            <div className="flex items-center gap-3">
-              <GripVertical className="w-4 h-4 text-muted-foreground shrink-0" />
-              <div className="flex-1">
-                <p className="font-medium text-sm">{ex.exerciseName}</p>
-                <p className="text-xs text-muted-foreground capitalize">{ex.category}</p>
-              </div>
-              <Button
-                variant="ghost"
-                size="icon-sm"
-                className="text-muted-foreground hover:text-destructive"
-                onClick={() => removeExercise(idx)}
-              >
-                <Trash2 className="w-3.5 h-3.5" />
-              </Button>
-            </div>
-            <div className="grid grid-cols-4 gap-2">
-              {[
-                { label: "Sets", field: "defaultSets" as const, step: "1" },
-                { label: "Min reps", field: "defaultRepsMin" as const, step: "1" },
-                { label: "Max reps", field: "defaultRepsMax" as const, step: "1" },
-                { label: "Rest (s)", field: "restSeconds" as const, step: "15" },
-              ].map(({ label, field, step }) => (
-                <div key={field} className="space-y-1">
-                  <Label className="text-xs">{label}</Label>
-                  <Input
-                    type="number"
-                    step={step}
-                    value={(ex[field] as number) ?? ""}
-                    onChange={(e) => updateExercise(idx, field, parseInt(e.target.value) || 0)}
-                    className="h-8 text-sm text-center"
-                  />
+        {exercises.map((ex, idx) => {
+          const isCardio = ex.category === "cardio"
+          const nameLower = ex.exerciseName.toLowerCase()
+          const isTreadmill = nameLower.includes("treadmill")
+          const isBike = nameLower.includes("bike") || nameLower.includes("cycle") || nameLower.includes("stationary")
+
+          return (
+            <div key={idx} className="bento-card space-y-3">
+              <div className="flex items-center gap-3">
+                <GripVertical className="w-4 h-4 text-muted-foreground shrink-0" />
+                <div className="flex-1">
+                  <p className="font-medium text-sm">{ex.exerciseName}</p>
+                  <p className="text-xs text-muted-foreground capitalize">{ex.category}</p>
                 </div>
-              ))}
+                <Button
+                  variant="ghost"
+                  size="icon-sm"
+                  className="text-muted-foreground hover:text-destructive"
+                  onClick={() => removeExercise(idx)}
+                >
+                  <Trash2 className="w-3.5 h-3.5" />
+                </Button>
+              </div>
+
+              {isCardio ? (
+                /* ── Cardio exercise config ── */
+                <div className="space-y-2">
+                  {/* Row 1: Sets + Rest */}
+                  <div className="grid grid-cols-2 gap-2">
+                    <div className="space-y-1">
+                      <Label className="text-xs">Sets</Label>
+                      <Input
+                        type="number"
+                        step="1"
+                        min="1"
+                        value={ex.defaultSets}
+                        onChange={(e) => updateExercise(idx, "defaultSets", parseInt(e.target.value) || 1)}
+                        className="h-9 text-sm text-center"
+                      />
+                    </div>
+                    <div className="space-y-1">
+                      <Label className="text-xs">Rest (s)</Label>
+                      <Input
+                        type="number"
+                        step="15"
+                        min="0"
+                        value={ex.restSeconds}
+                        onChange={(e) => updateExercise(idx, "restSeconds", parseInt(e.target.value) || 0)}
+                        className="h-9 text-sm text-center"
+                      />
+                    </div>
+                  </div>
+
+                  {/* Row 2: Duration + Distance (all cardio) */}
+                  <div className="grid grid-cols-2 gap-2">
+                    <div className="space-y-1">
+                      <Label className="text-xs">Duration (MM:SS)</Label>
+                      <Input
+                        type="text"
+                        placeholder="30:00"
+                        defaultValue={formatDuration(ex.defaultDurationSec)}
+                        onBlur={(e) => updateExercise(idx, "defaultDurationSec", parseDuration(e.target.value))}
+                        className="h-9 text-sm text-center"
+                      />
+                    </div>
+                    {!isTreadmill && (
+                      <div className="space-y-1">
+                        <Label className="text-xs">Distance (mi)</Label>
+                        <Input
+                          type="number"
+                          step="0.1"
+                          min="0"
+                          placeholder="—"
+                          value={ex.defaultDistanceM != null ? (ex.defaultDistanceM / 1609.344).toFixed(2) : ""}
+                          onChange={(e) => {
+                            const mi = parseFloat(e.target.value)
+                            updateExercise(idx, "defaultDistanceM", isNaN(mi) ? null : mi * 1609.344)
+                          }}
+                          className="h-9 text-sm text-center"
+                        />
+                      </div>
+                    )}
+                    {isTreadmill && (
+                      <div className="space-y-1">
+                        <Label className="text-xs">Speed (mph)</Label>
+                        <Input
+                          type="number"
+                          step="0.5"
+                          min="0"
+                          placeholder="—"
+                          value={ex.defaultSpeedMph ?? ""}
+                          onChange={(e) => {
+                            const v = parseFloat(e.target.value)
+                            updateExercise(idx, "defaultSpeedMph", isNaN(v) ? null : v)
+                          }}
+                          className="h-9 text-sm text-center"
+                        />
+                      </div>
+                    )}
+                  </div>
+
+                  {/* Row 3: Treadmill-specific (incline) or Bike-specific (resistance) */}
+                  {isTreadmill && (
+                    <div className="grid grid-cols-2 gap-2">
+                      <div className="space-y-1">
+                        <Label className="text-xs">Incline (%)</Label>
+                        <Input
+                          type="number"
+                          step="0.5"
+                          min="0"
+                          placeholder="—"
+                          value={ex.defaultIncline ?? ""}
+                          onChange={(e) => {
+                            const v = parseFloat(e.target.value)
+                            updateExercise(idx, "defaultIncline", isNaN(v) ? null : v)
+                          }}
+                          className="h-9 text-sm text-center"
+                        />
+                      </div>
+                      <div /> {/* spacer */}
+                    </div>
+                  )}
+                  {isBike && (
+                    <div className="grid grid-cols-2 gap-2">
+                      <div className="space-y-1">
+                        <Label className="text-xs">Resistance</Label>
+                        <Input
+                          type="number"
+                          step="1"
+                          min="0"
+                          placeholder="—"
+                          value={ex.defaultResistance ?? ""}
+                          onChange={(e) => {
+                            const v = parseFloat(e.target.value)
+                            updateExercise(idx, "defaultResistance", isNaN(v) ? null : v)
+                          }}
+                          className="h-9 text-sm text-center"
+                        />
+                      </div>
+                      <div /> {/* spacer */}
+                    </div>
+                  )}
+                </div>
+              ) : (
+                /* ── Strength exercise config ── */
+                <div className="grid grid-cols-2 gap-2">
+                  {[
+                    { label: "Sets", field: "defaultSets" as const, step: "1" },
+                    { label: "Min reps", field: "defaultRepsMin" as const, step: "1" },
+                    { label: "Max reps", field: "defaultRepsMax" as const, step: "1" },
+                    { label: "Rest (s)", field: "restSeconds" as const, step: "15" },
+                  ].map(({ label, field, step }) => (
+                    <div key={field} className="space-y-1">
+                      <Label className="text-xs">{label}</Label>
+                      <Input
+                        type="number"
+                        step={step}
+                        value={(ex[field] as number) ?? ""}
+                        onChange={(e) => updateExercise(idx, field, parseInt(e.target.value) || 0)}
+                        className="h-9 text-sm text-center"
+                      />
+                    </div>
+                  ))}
+                </div>
+              )}
             </div>
-          </div>
-        ))}
+          )
+        })}
 
         {exercises.length === 0 && (
           <div className="text-center py-8 text-muted-foreground text-sm bento-card">

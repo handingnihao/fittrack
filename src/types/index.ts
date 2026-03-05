@@ -128,6 +128,11 @@ export interface RoutineWithExercises {
     defaultWeightKg: number | null;
     restSeconds: number;
     notes: string | null;
+    defaultDurationSec?: number | null;
+    defaultDistanceM?: number | null;
+    defaultSpeedMph?: number | null;
+    defaultIncline?: number | null;
+    defaultResistance?: number | null;
   }>;
 }
 

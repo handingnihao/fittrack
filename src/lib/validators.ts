@@ -48,6 +48,12 @@ export const AddRoutineExerciseSchema = z.object({
   defaultWeightKg: z.number().positive().optional().nullable(),
   restSeconds: z.number().int().min(0).max(600).optional(),
   notes: z.string().max(500).optional().nullable(),
+  // Cardio-specific defaults
+  defaultDurationSec: z.number().int().min(0).optional().nullable(),
+  defaultDistanceM: z.number().min(0).optional().nullable(),
+  defaultSpeedMph: z.number().min(0).max(100).optional().nullable(),
+  defaultIncline: z.number().min(0).max(100).optional().nullable(),
+  defaultResistance: z.number().min(0).max(100).optional().nullable(),
 });
 
 // ─── Workout Sessions ──────────────────────

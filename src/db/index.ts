@@ -178,6 +178,11 @@ function runMigrations(sqlite: Database.Database) {
   addCol('sets', 'incline', 'REAL')
   addCol('sets', 'resistance', 'REAL')
   addCol('sets', 'speed_mph', 'REAL')
+  addCol('routine_exercises', 'default_duration_sec', 'INTEGER')
+  addCol('routine_exercises', 'default_distance_m', 'REAL')
+  addCol('routine_exercises', 'default_speed_mph', 'REAL')
+  addCol('routine_exercises', 'default_incline', 'REAL')
+  addCol('routine_exercises', 'default_resistance', 'REAL')
 
   // Insert missing exercises (idempotent)
   const insertExIfMissing = (name: string, category: string, equipment: string, muscleGroup: string) => {

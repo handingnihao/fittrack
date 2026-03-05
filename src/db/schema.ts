@@ -104,6 +104,12 @@ export const routineExercises = sqliteTable(
     defaultWeightKg: real("default_weight_kg"),
     restSeconds: integer("rest_seconds").notNull().default(90),
     notes: text("notes"),
+    // Cardio-specific defaults
+    defaultDurationSec: integer("default_duration_sec"),
+    defaultDistanceM: real("default_distance_m"),
+    defaultSpeedMph: real("default_speed_mph"),
+    defaultIncline: real("default_incline"),
+    defaultResistance: real("default_resistance"),
   },
   (t) => ({
     routineIdx: index("routine_exercises_routine_idx").on(t.routineId),
