@@ -99,11 +99,18 @@ export function GoalsCalculator({ profile, latestWeightKg }: Props) {
   const fatG = targetCalories ? Math.round(targetCalories * diet.fat / 9) : null
 
   async function saveGoalPref(patch: Record<string, unknown>) {
-    await fetch("/api/profile", {
-      method: "PATCH",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify(patch),
-    })
+    try {
+      const res = await fetch("/api/profile", {
+        method: "PATCH",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(patch),
+      })
+      if (!res.ok) {
+        console.error("Failed to save goal pref:", res.status)
+      }
+    } catch (err) {
+      console.error("Failed to save goal pref:", err)
+    }
   }
 
   function handleLbsPerWeekChange(v: string) {

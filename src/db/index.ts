@@ -2,8 +2,20 @@ import Database from "better-sqlite3";
 import { drizzle } from "drizzle-orm/better-sqlite3";
 import * as schema from "./schema";
 import path from "path";
+import fs from "fs";
 
-const DB_PATH = process.env.DATABASE_URL ?? path.join(process.cwd(), "fittrack.db");
+// Use /data for writable storage in containerized environments (like Lazycat)
+const DATA_DIR = process.env.DATA_DIR ?? "/data";
+const DB_PATH = process.env.DATABASE_URL ?? path.join(DATA_DIR, "fittrack.db");
+
+// Ensure data directory exists
+try {
+  if (!fs.existsSync(DATA_DIR)) {
+    fs.mkdirSync(DATA_DIR, { recursive: true });
+  }
+} catch (err) {
+  console.error("Failed to create data directory:", err);
+}
 
 // Singleton pattern — reuse the same connection across hot reloads in dev
 const globalForDb = globalThis as unknown as { db: ReturnType<typeof drizzle> | undefined };
