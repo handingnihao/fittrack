@@ -129,9 +129,30 @@ export function GoalsCalculator({ profile, latestWeightKg }: Props) {
     const ft = parseFloat(heightFt)
     const inches = parseFloat(heightIn)
     const hasHeight = heightFt !== "" || heightIn !== ""
+
+    // 计算身高，验证数据有效性
+    let heightCm: number | null = null
+    if (hasHeight) {
+      const ftNum = isNaN(ft) ? 0 : ft
+      const inNum = isNaN(inches) ? 0 : inches
+      // 验证：如果两个输入框都为0或空，提示用户输入有效身高
+      if (ftNum === 0 && inNum === 0) {
+        toast.error("Please enter a valid height")
+        setSaving(false)
+        return
+      }
+      heightCm = ftInToCm(ftNum, inNum)
+      // 验证计算结果是否合理（大于 0 且不超过 300cm）
+      if (heightCm <= 0 || heightCm > 300) {
+        toast.error("Height must be between 1-300 cm")
+        setSaving(false)
+        return
+      }
+    }
+
     const body: Record<string, unknown> = {
       ageYears: age !== "" ? parseInt(age) : null,
-      heightCm: hasHeight ? ftInToCm(isNaN(ft) ? 0 : ft, isNaN(inches) ? 0 : inches) : null,
+      heightCm,
       biologicalSex: sex !== "" ? sex : null,
       activityLevel: activityLevel !== "" ? activityLevel : null,
     }
