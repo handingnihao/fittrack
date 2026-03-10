@@ -141,15 +141,29 @@ export function GoalsCalculator({ profile, latestWeightKg }: Props) {
         setSaving(false)
         return
       }
-      // 验证：ft 输入框的值通常不超过 9（9英尺已经是2.74米）
-      if (ftNum > 9) {
-        toast.error("If you meant 70 inches, enter 5 in the ft field and 10 in the in field")
+      // 验证：ft 输入框的值通常不超过 9
+      // 如果超过 9 且在合理身高范围内(100-250)，用户可能是在输入厘米值
+      if (ftNum > 9 && ftNum <= 250) {
+        const converted = cmToFtInParts(ftNum)
+        toast.error(`${ftNum} cm = ${converted.ft} ft ${converted.inches} in. Enter these values in the fields.`)
+        setSaving(false)
+        return
+      }
+      // 如果超过 250，显示通用错误
+      if (ftNum > 250) {
+        toast.error("Height seems too large. Use ft/in format (e.g., 5 ft 10 in)")
         setSaving(false)
         return
       }
       // 验证：in 输入框的值通常不超过 11（12英寸=1英尺）
-      if (inNum > 11) {
-        toast.error("Inches should be 0-11. For 70 inches (5'10\"), enter 5 ft and 10 in")
+      if (inNum > 11 && inNum <= 250) {
+        const converted = cmToFtInParts(inNum)
+        toast.error(`${inNum} cm = ${converted.ft} ft ${converted.inches} in. Enter these values in the fields.`)
+        setSaving(false)
+        return
+      }
+      if (inNum > 250) {
+        toast.error("Inches should be 0-11")
         setSaving(false)
         return
       }
